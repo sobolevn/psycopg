@@ -270,7 +270,17 @@ class LtreeLoader(Loader):
         return Ltree(data.decode("utf8"))
 
 
-def register_adapters(
+class LqueryLoader(Loader):
+
+    format = pq.Format.TEXT
+
+    def load(self, data: Buffer) -> Lquery:
+        if isinstance(data, memoryview):
+            data = bytes(data)
+        return Lquery(data.decode("utf8"))
+
+
+def register_ltree(
     info: TypeInfo, context: Optional[AdaptContext] = None
 ) -> None:
 
@@ -286,3 +296,21 @@ def register_adapters(
 
     # register the text loader on the oid
     adapters.register_loader(info.oid, LtreeLoader)
+
+
+def register_lquery(
+    info: TypeInfo, context: Optional[AdaptContext] = None
+) -> None:
+
+    info.register(context)
+
+    adapters = context.adapters if context else postgres.adapters
+
+    # Generate and register a customized text dumper
+    dumper: Type[BaseLtreeDumper] = type(
+        "LqueryDumper", (BaseLtreeDumper,), {"_oid": info.oid}
+    )
+    adapters.register_dumper(Lquery, dumper)
+
+    # register the text loader on the oid
+    adapters.register_loader(info.oid, LqueryLoader)

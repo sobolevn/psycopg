@@ -2,7 +2,8 @@ from string import ascii_lowercase, ascii_uppercase, digits
 
 import pytest
 from psycopg.types import TypeInfo
-from psycopg.types.ltree import Ltree, Star, Lquery, register_adapters
+from psycopg.types.ltree import Ltree, Star, Lquery
+from psycopg.types.ltree import register_ltree, register_lquery
 
 
 class TestInit:
@@ -228,11 +229,11 @@ class TestStar:
         assert str(Lquery(["foo|bar"])) == "foo|bar"
 
 
-class TestAdapt:
+class TestAdaptLtree:
     def test_adapt(self, conn, ltree):
         info = TypeInfo.fetch(conn, "ltree")
         assert info
-        register_adapters(info, conn)
+        register_ltree(info, conn)
         assert conn.adapters.types[info.oid].name == "ltree"
 
         cur = conn.execute("select null::ltree, ''::ltree, 'a.b'::ltree")
@@ -242,13 +243,39 @@ class TestAdapt:
 
     @pytest.mark.parametrize("t", samp)
     def test_roundtrip(self, ltree, conn, t):
-        register_adapters(TypeInfo.fetch(conn, "ltree"), conn)
+        register_ltree(TypeInfo.fetch(conn, "ltree"), conn)
         cur = conn.cursor()
         t1 = cur.execute("select %s", [t]).fetchone()[0]
         assert type(t) is type(t1)
         assert t == t1
 
     def test_roundtrip_array(self, ltree, conn):
-        register_adapters(TypeInfo.fetch(conn, "ltree"), conn)
+        register_ltree(TypeInfo.fetch(conn, "ltree"), conn)
+        samp1 = conn.execute("select %s", (self.samp,)).fetchone()[0]
+        assert samp1 == self.samp
+
+
+class TestAdaptLquery:
+    def test_adapt(self, conn, ltree):
+        info = TypeInfo.fetch(conn, "lquery")
+        assert info
+        register_lquery(info, conn)
+        assert conn.adapters.types[info.oid].name == "lquery"
+
+        cur = conn.execute("select null::lquery, 'a.*.b'::lquery")
+        assert cur.fetchone() == (None, Lquery("a.*.b"))
+
+    samp = [Lquery("a"), Lquery("a.*{,3}.c.*.d")]
+
+    @pytest.mark.parametrize("t", samp)
+    def test_roundtrip(self, ltree, conn, t):
+        register_lquery(TypeInfo.fetch(conn, "lquery"), conn)
+        cur = conn.cursor()
+        t1 = cur.execute("select %s", [t]).fetchone()[0]
+        assert type(t) is type(t1)
+        assert t == t1
+
+    def test_roundtrip_array(self, ltree, conn):
+        register_lquery(TypeInfo.fetch(conn, "lquery"), conn)
         samp1 = conn.execute("select %s", (self.samp,)).fetchone()[0]
         assert samp1 == self.samp
