@@ -142,10 +142,19 @@ def check_connection_version(got, function):
 
 @pytest.fixture
 def hstore(svcconn):
+    _create_extension(svcconn, "hstore")
+
+
+@pytest.fixture
+def ltree(svcconn):
+    _create_extension(svcconn, "ltree")
+
+
+def _create_extension(svcconn, name):
     from psycopg import Error
 
     try:
         with svcconn.transaction():
-            svcconn.execute("create extension if not exists hstore")
+            svcconn.execute(f"create extension if not exists {name}")
     except Error as e:
         pytest.skip(str(e))
