@@ -295,6 +295,15 @@ async def test_executemany_rowcount_no_hit(aconn, execmany):
     assert cur.rowcount == 0
 
 
+async def test_executemany_returning_value(aconn, execmany):
+    cur = aconn.cursor()
+    x = await cur.executemany(
+        "insert into execmany(num, data) values (%s, %s) returning num",
+        [(10, "hello"), (20, "world")],
+    )
+    assert x is cur
+
+
 @pytest.mark.parametrize(
     "query",
     [

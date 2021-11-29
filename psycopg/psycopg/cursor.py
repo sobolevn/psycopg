@@ -205,11 +205,15 @@ class BaseCursor(Generic[ConnectionType, Row]):
             yield from self._conn._exec_command(cmd)
 
     def _executemany_gen(
-        self, query: Query, params_seq: Iterable[Params]
+        self,
+        query: Query,
+        params_seq: Iterable[Params],
+        returning: bool = True,
     ) -> PQGen[None]:
         """Generator implementing `Cursor.executemany()`."""
         yield from self._start_query(query)
         first = True
+        all_results = []
         nrows = 0
         for params in params_seq:
             if first:
@@ -221,13 +225,18 @@ class BaseCursor(Generic[ConnectionType, Row]):
 
             results = yield from self._maybe_prepare_gen(pgq, prepare=True)
             self._set_results(results)
-
+            if returning:
+                all_results.extend(results)
             for res in results:
                 nrows += res.command_tuples or 0
 
-        if self._results:
             self._set_result(0)
 
+        if returning:
+            self._results = all_results
+
+        if self._results:
+            self._set_result(0)
         # Override rowcout for the first result. Calls to nextset() will change
         # it to the value of that result only, but we hope nobody will notice.
         # You haven't read this comment.
@@ -568,14 +577,22 @@ class Cursor(BaseCursor["Connection[Any]", Row]):
                 )
         except e.Error as ex:
             raise ex.with_traceback(None)
+
         return self
 
-    def executemany(self, query: Query, params_seq: Iterable[Params]) -> None:
+    def executemany(
+        self: _C, query: Query, params_seq: Iterable[Params]
+    ) -> _C:
         """
         Execute the same command with a sequence of input data.
         """
-        with self._conn.lock:
-            self._conn.wait(self._executemany_gen(query, params_seq))
+        try:
+            with self._conn.lock:
+                self._conn.wait(self._executemany_gen(query, params_seq))
+        except e.Error as ex:
+            raise ex.with_traceback(None)
+
+        return self
 
     def stream(
         self,

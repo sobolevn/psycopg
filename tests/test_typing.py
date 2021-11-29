@@ -263,7 +263,8 @@ obj = {await_} curs.{method}()
 
 @pytest.mark.parametrize("server_side", [False, True])
 @pytest.mark.parametrize("conn_class", ["Connection", "AsyncConnection"])
-def test_cur_subclass_execute(mypy, conn_class, server_side):
+@pytest.mark.parametrize("method", ["execute", "executemany"])
+def test_cur_subclass_execute(mypy, method, conn_class, server_side):
     async_ = "async " if "Async" in conn_class else ""
     await_ = "await" if "Async" in conn_class else ""
     cur_base_class = "".join(
@@ -292,7 +293,7 @@ class MyCursor(psycopg.{cur_base_class}[Row]):
     cur = cast(MyCursor[TupleRow], conn.cursor({cur_name}))
     {async_}with cur as cur2:
         reveal_type(cur2)
-        cur3 = {await_} cur2.execute("")
+        cur3 = {await_} cur2.{method}("", [])
         reveal_type(cur3)
 """
     cp = mypy.run_on_source(src)

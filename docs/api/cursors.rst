@@ -86,6 +86,8 @@ The `!Cursor` class
         several :sql:`INSERT` (and with some SQL creativity for massive
         :sql:`UPDATE` too) you may consider using `copy()`.
 
+        Return the cursor itself.
+
         See :ref:`query-parameters` for all the details about executing
         queries.
 

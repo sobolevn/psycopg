@@ -303,6 +303,15 @@ def test_executemany_rowcount_no_hit(conn, execmany):
     assert cur.rowcount == 0
 
 
+def test_executemany_returning_value(conn, execmany):
+    cur = conn.cursor()
+    x = cur.executemany(
+        "insert into execmany(num, data) values (%s, %s) returning num",
+        [(10, "hello"), (20, "world")],
+    )
+    assert x is cur
+
+
 @pytest.mark.parametrize(
     "query",
     [

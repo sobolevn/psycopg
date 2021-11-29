@@ -79,13 +79,19 @@ class AsyncCursor(BaseCursor["AsyncConnection[Any]", Row]):
                 )
         except e.Error as ex:
             raise ex.with_traceback(None)
+
         return self
 
     async def executemany(
-        self, query: Query, params_seq: Iterable[Params]
-    ) -> None:
-        async with self._conn.lock:
-            await self._conn.wait(self._executemany_gen(query, params_seq))
+        self: _C, query: Query, params_seq: Iterable[Params]
+    ) -> _C:
+        try:
+            async with self._conn.lock:
+                await self._conn.wait(self._executemany_gen(query, params_seq))
+        except e.Error as ex:
+            raise ex.with_traceback(None)
+
+        return self
 
     async def stream(
         self,

@@ -265,7 +265,9 @@ class ServerCursor(Cursor[Row]):
 
         return self
 
-    def executemany(self, query: Query, params_seq: Iterable[Params]) -> None:
+    def executemany(
+        self: _C, query: Query, params_seq: Iterable[Params]
+    ) -> _C:
         """Method not implemented for server-side cursors."""
         raise e.NotSupportedError(
             "executemany not supported on server-side cursors"
@@ -386,8 +388,8 @@ class AsyncServerCursor(AsyncCursor[Row]):
         return self
 
     async def executemany(
-        self, query: Query, params_seq: Iterable[Params]
-    ) -> None:
+        self: _AC, query: Query, params_seq: Iterable[Params]
+    ) -> _AC:
         raise e.NotSupportedError(
             "executemany not supported on server-side cursors"
         )
