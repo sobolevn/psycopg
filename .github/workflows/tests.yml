@@ -29,7 +29,7 @@ jobs:
           - {impl: c, python: "3.9", postgres: "postgres:11", libpq: ""}
           - {impl: c, python: "3.10", postgres: "postgres:10", libpq: "oldest"}
           - {impl: dns, python: "3.9", postgres: "postgres:14", libpq: ""}
-          - {impl: postgis, python: "3.9", postgres: "postgis/postgis", libpq: ""}
+          - {impl: postgis, python: "3.8", postgres: "postgis/postgis", libpq: ""}
 
     env:
       PSYCOPG_IMPL: ${{ matrix.impl }}
@@ -222,7 +222,7 @@ jobs:
       - name: Install and run tests (C implementation)
         if: ${{ matrix.impl == 'c' }}
         run: |
-          pip install ./psycopg/[test] ./psycopg_pool
+          pip install ./psycopg/[test] ./psycopg_pool -c tests/constraints.txt
           &"pip" install @(Get-ChildItem wheelhouse\*.whl)
           # Fix the path for the tests using ctypes
           $env:Path = "C:\Program Files\PostgreSQL\14\bin\;$env:Path"
